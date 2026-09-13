@@ -1,0 +1,36 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+
+# Game / SPT client assemblies — copy locally from your SPT install, do not commit
+libs/*
+!libs/.gitkeep
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Local binaries accidentally dropped next to the project
+*.dll
+*.pdb
+*.exe
+*.zip
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+*.nuget.props
+*.nuget.targets
+
+# Logs
+*.log
+*.binlog
