@@ -3,7 +3,7 @@ using BepInEx.Configuration;
 
 namespace CactusPie.ContainerQuickLoot
 {
-    [BepInPlugin("com.cactuspie.containerquickloot.cqlv4", "CactusPie.ContainerQuickLoot.CQLv4", "1.9.0")]
+    [BepInPlugin("com.cactuspie.containerquickloot.cqlv4", "CactusPie.ContainerQuickLoot.CQLv4", "1.9.1")]
     public class ContainerQuickLootPlugin : BaseUnityPlugin
     {
         internal static ConfigEntry<bool> EnableForCtrlClick { get; private set; }

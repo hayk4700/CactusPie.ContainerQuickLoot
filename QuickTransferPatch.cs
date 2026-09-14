@@ -27,7 +27,12 @@ namespace CactusPie.ContainerQuickLoot
             ItemManipulator.EMoveItemOrder order,
             bool simulate)
         {
-            Inventory inventory;
+            // Bots and other PMCs also call QuickFindAppropriatePlace with OwnerType.Profile.
+            // Only redirect loot that belongs to the local player.
+            if (!TryGetLocalPlayerContext(controller, out _, out Inventory inventory))
+            {
+                return true;
+            }
 
             // If is ctrl+click loot
             if (order == ItemManipulator.EMoveItemOrder.MoveToAnotherSide)
@@ -38,15 +43,10 @@ namespace CactusPie.ContainerQuickLoot
                 }
             }
             // If is loose loot pick up
-            else if (order == ItemManipulator.EMoveItemOrder.PickUp && controller.OwnerType == EOwnerType.Profile)
+            else if (order == ItemManipulator.EMoveItemOrder.PickUp)
             {
                 if (!ContainerQuickLootPlugin.EnableForLooseLoot.Value)
                 {
-                    if (!TryGetInventory(out inventory))
-                    {
-                        return true;
-                    }
-
                     return !TryMergeItemIntoAnExistingStack(item, inventory, controller, simulate, ref __result);
                 }
             }
@@ -61,11 +61,6 @@ namespace CactusPie.ContainerQuickLoot
                 return true;
             }
 
-            if (!TryGetInventory(out inventory))
-            {
-                return true;
-            }
-
             IEnumerable<IContainer> targetContainers = FindTargetContainers(item, inventory);
 
             foreach (IContainer collectionContainer in targetContainers)
@@ -76,7 +71,7 @@ namespace CactusPie.ContainerQuickLoot
                 }
 
                 // ReSharper disable once PossibleMultipleEnumeration
-                if (!(targets.SingleOrDefaultWithoutException() is InventoryEquipment))
+                if (!ReferenceEquals(targets.SingleOrDefaultWithoutException(), inventory.Equipment))
                 {
                     continue;
                 }
@@ -124,27 +119,60 @@ namespace CactusPie.ContainerQuickLoot
             return !TryMergeItemIntoAnExistingStack(item, inventory, controller, simulate, ref __result);
         }
 
-        private static bool TryGetInventory(out Inventory inventory)
+        private static bool TryGetLocalPlayerContext(
+            ItemController controller,
+            out Player player,
+            out Inventory inventory)
         {
+            player = null;
+            inventory = null;
+
             GameWorld gameWorld = Singleton<GameWorld>.Instance;
 
             // If gameWorld is null that means the game is currently not in progress, for instance you're in your hideout
             // start 3.7 hideout gameWorld no longer be null. So need to use getlocationId
             if (gameWorld == null || gameWorld.LocationId == null)
             {
+                return false;
+            }
+
+            player = GetLocalPlayerFromWorld(gameWorld);
+            if (player == null || !player.IsYourPlayer)
+            {
+                player = null;
+                return false;
+            }
+
+            inventory = player.Inventory;
+            if (inventory == null)
+            {
+                player = null;
+                return false;
+            }
+
+            if (!IsLocalPlayerController(controller, player))
+            {
+                player = null;
                 inventory = null;
                 return false;
             }
 
-            Player player = GetLocalPlayerFromWorld(gameWorld);
-            inventory = player?.Inventory;
+            return true;
+        }
 
-            if (inventory == null)
+        private static bool IsLocalPlayerController(ItemController controller, Player player)
+        {
+            if (controller == null || player == null)
             {
                 return false;
             }
 
-            return true;
+            if (ReferenceEquals(controller, player.InventoryController))
+            {
+                return true;
+            }
+
+            return !string.IsNullOrEmpty(controller.ID) && controller.ID == player.ProfileId;
         }
 
         private static IEnumerable<IContainer> FindTargetContainers(Item item, Inventory inventory)
